@@ -1,5 +1,7 @@
+
 import Link from 'next/link';
 import { createClient } from '@/lib/supabaseServer';
+import GoalCard from '@/components/GoalCard';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,10 @@ type Card = {
   vibe: string;
   contact_handle: string;
   contact_method: string;
+};
+
+type FormattedCard = Omit<Card, 'created_at'> & {
+  formatted_created_at: string;
 };
 
 export default async function Home() {
@@ -34,24 +40,12 @@ export default async function Home() {
     padding: '20px',
   };
 
-  const cardStyle: React.CSSProperties = {
-    border: '1px solid #444',
-    borderRadius: '8px',
-    padding: '15px',
-    marginBottom: '15px',
-    background: '#222',
-  };
-
-  const tagStyle: React.CSSProperties = {
-    display: 'inline-block',
-    background: '#0070f3',
-    color: 'white',
-    padding: '3px 8px',
-    borderRadius: '4px',
-    marginRight: '5px',
-    fontSize: '0.8em',
-    textTransform: 'lowercase',
-  };
+  const formattedCards: FormattedCard[] = cards?.map(card => ({
+    ...card,
+    formatted_created_at: new Date(card.created_at).toLocaleDateString('en-IN', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    })
+  })) || [];
 
   return (
     <main style={pageStyle}>
@@ -64,30 +58,12 @@ export default async function Home() {
 
       {error && <p style={{ color: "red" }}>Error loading goals: {error.message}</p>}
 
-      {!cards || cards.length === 0 && !error ? (
+      {!formattedCards || formattedCards.length === 0 && !error ? (
         <p>No goals posted yet. Be the first!</p>
       ) : (
         <div>
-          {cards?.map((card: Card) => (
-            <div key={card.id} style={cardStyle}>
-              <h3 style={{ marginTop: 0, marginBottom: '10px' }}>{card.description}</h3>
-              <div style={{ marginBottom: '10px' }}>
-                {card.tech_tags?.map((tag: string) => (
-                  <span key={tag} style={tagStyle}>{tag}</span>
-                ))}
-              </div>
-              <p style={{ margin: '5px 0', fontSize: '0.9em' }}>
-                <span style={{ fontWeight: 'bold' }}>Level:</span> {card.skill_level} |
-                <span style={{ fontWeight: 'bold' }}> Vibe:</span> {card.vibe} |
-                <span style={{ fontWeight: 'bold' }}> Goal:</span> {card.goal_type}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#aaa' }}>
-                <span style={{ fontWeight: 'bold' }}>Contact:</span> {card.contact_method} @ {card.contact_handle}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '0.8em', color: '#888' }}>
-                Posted: {new Date(card.created_at).toLocaleDateString()}
-              </p>
-            </div>
+          {formattedCards.map((card: FormattedCard) => (
+            <GoalCard key={card.id} card={card} />
           ))}
         </div>
       )}
