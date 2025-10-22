@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase";
 import { findMatches } from './action';
 
 export type Card = {
@@ -15,13 +15,13 @@ export type Card = {
     vibe: string;
     contact_handle: string;
     contact_method: string;
+    email?: string;
     website?: string;
     formatted_created_at?: string;
 };
 
-
 export default function PostGoal() {
-    const router = useRouter()
+    const router = useRouter();
     const [formData, setFormData] = useState<Omit<Card, 'id' | 'created_at' | 'formatted_created_at'>>({
         goal_type: "BUILD",
         tech_tags: [],
@@ -30,21 +30,22 @@ export default function PostGoal() {
         vibe: "CASUAL",
         contact_handle: "",
         contact_method: "DISCORD",
+        email: "",
         website: "",
-    })
-    const [techTagInput, setTechTagInput] = useState("")
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    });
+    const [techTagInput, setTechTagInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
-        const { name, value } = e.target
+        const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
             [name]: value,
-        }))
-    }
+        }));
+    };
 
     const handleAddTag = () => {
         setError(null);
@@ -66,7 +67,7 @@ export default function PostGoal() {
         } else if (formData.tech_tags.includes(techTagInput.trim().toLowerCase())) {
             setError("Tag already added.");
         }
-    }
+    };
 
     const handleRemoveTag = (tagToRemove: string) => {
         setFormData((prev) => ({
@@ -76,12 +77,12 @@ export default function PostGoal() {
         setError(null);
     };
 
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (formData.website) {
             console.warn("Honeypot filled.");
+            router.push('/');
             return;
         }
         if (formData.tech_tags.length === 0 || formData.tech_tags.length > 5) {
@@ -101,6 +102,7 @@ export default function PostGoal() {
             vibe: formData.vibe,
             contact_handle: formData.contact_handle.trim(),
             contact_method: formData.contact_method,
+            email: formData.email?.trim() || undefined,
         };
 
         const { data: insertedData, error: insertError } = await supabase
@@ -109,11 +111,10 @@ export default function PostGoal() {
             .select()
             .single();
 
-
         if (insertError || !insertedData) {
             setIsLoading(false);
-            console.error(insertError);
-            setError(`Error posting goal: ${insertError?.message || 'Unknown error'}`);
+            console.error("Insert Error:", insertError);
+            setError(`Error posting goal: ${insertError?.message || 'Unknown error during insert'}`);
             return;
         }
 
@@ -122,18 +123,16 @@ export default function PostGoal() {
             const matchIds = matches.map(m => m.id);
             const queryParams = new URLSearchParams({ matches: JSON.stringify(matchIds) });
             router.push(`/success?${queryParams.toString()}`);
-
         } catch (matchError) {
             setIsLoading(false);
             console.error("Error finding matches:", matchError);
             setError("Goal posted, but failed to find matches. Check the homepage.");
+            router.push("/");
         }
     };
 
     const inputBaseClasses = "mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white";
     const labelClasses = "block text-sm font-medium text-gray-300";
-
-
 
     return (
         <div className="max-w-xl mx-auto p-6 md:p-8 bg-gray-800 rounded-lg shadow-xl mt-10 border border-gray-700">
@@ -160,7 +159,7 @@ export default function PostGoal() {
                         placeholder="e.g., Build a fast API in Rust with Axum for a portfolio piece"
                         required
                         maxLength={150}
-                        className={`${inputBaseClasses} min-h-[80px] resize-y`} // Allow vertical resize
+                        className={`${inputBaseClasses} min-h-[80px] resize-y`}
                     />
                 </div>
 
@@ -174,12 +173,12 @@ export default function PostGoal() {
                             onChange={(e) => { setTechTagInput(e.target.value); setError(null); }}
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             placeholder="e.g., rust"
-                            className={`${inputBaseClasses} grow`} // Take available space
+                            className={`${inputBaseClasses} grow`}
                         />
                         <button
                             type="button"
                             onClick={handleAddTag}
-                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors shrink-0" // Prevent shrinking
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors shrink-0"
                         >Add</button>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -237,8 +236,24 @@ export default function PostGoal() {
                     />
                 </div>
 
+                <div>
+                    <label htmlFor="email" className={labelClasses}>
+                        Email (Optional):
+                        <span className="text-xs text-gray-400 ml-1">
+                            - Get a reminder before your card expires. Never shared publicly.
+                        </span>
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="you@example.com"
+                        className={inputBaseClasses}
+                    />
+                </div>
 
-                {/* Honeypot - Keep hidden */}
                 <div className="absolute left-[-5000px]" aria-hidden="true">
                     <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
                     <input
@@ -256,7 +271,6 @@ export default function PostGoal() {
                 >
                     {isLoading ? "Posting..." : "Post Your Goal"}
                 </button>
-
             </form>
         </div>
     )

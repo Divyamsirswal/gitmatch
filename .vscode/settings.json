@@ -1,3 +1,14 @@
 {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "deno.enable": true,
+    "deno.lint": true,
+    "deno.unstable": true, // Often needed for Supabase functions features
+    // Specify that Deno settings should apply ONLY to the functions folder
+    "[typescript]": {
+        "editor.defaultFormatter": "denoland.vscode-deno"
+    },
+    "deno.enablePaths": [
+        "supabase/functions" // Tell Deno extension to manage this folder
+    ],
+    "typescript.tsdk": null
 }
