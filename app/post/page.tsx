@@ -1,23 +1,28 @@
 "use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase"
+import { findMatches } from './action';
 
-type Card = {
-    goal_type: string
-    tech_tags: string[]
-    description: string
-    skill_level: string
-    vibe: string
-    contact_handle: string
-    contact_method: string
-    website?: string
-}
+export type Card = {
+    id?: string;
+    created_at?: string;
+    goal_type: string;
+    tech_tags: string[];
+    description: string;
+    skill_level: string;
+    vibe: string;
+    contact_handle: string;
+    contact_method: string;
+    website?: string;
+    formatted_created_at?: string;
+};
+
 
 export default function PostGoal() {
     const router = useRouter()
-    const [formData, setFormData] = useState<Card>({
+    const [formData, setFormData] = useState<Omit<Card, 'id' | 'created_at' | 'formatted_created_at'>>({
         goal_type: "BUILD",
         tech_tags: [],
         description: "",
@@ -42,6 +47,7 @@ export default function PostGoal() {
     }
 
     const handleAddTag = () => {
+        setError(null);
         if (techTagInput && formData.tech_tags.length < 5 && !formData.tech_tags.includes(techTagInput.trim().toLowerCase())) {
             const newTag = techTagInput.trim().toLowerCase();
             if (newTag) {
@@ -50,12 +56,14 @@ export default function PostGoal() {
                     tech_tags: [...prev.tech_tags, newTag],
                 }));
                 setTechTagInput("");
+            } else {
+                setError("Tag cannot be empty.");
             }
         } else if (formData.tech_tags.length >= 5) {
             setError("Maximum of 5 tags allowed.");
         } else if (!techTagInput) {
             setError("Tag cannot be empty.");
-        } else {
+        } else if (formData.tech_tags.includes(techTagInput.trim().toLowerCase())) {
             setError("Tag already added.");
         }
     }
@@ -70,50 +78,57 @@ export default function PostGoal() {
 
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+        e.preventDefault();
 
         if (formData.website) {
-            console.warn("Honeypot field filled. Possible bot detected.");
+            console.warn("Honeypot filled.");
+            return;
+        }
+        if (formData.tech_tags.length === 0 || formData.tech_tags.length > 5) {
+            setError("Please use between 1 and 5 tech tags.");
             return;
         }
 
-        if (formData.tech_tags.length === 0) {
-            setError("Please add at least one tech tag.");
+        setIsLoading(true);
+        setError(null);
+
+        const supabase = createClient();
+        const cardToInsert = {
+            goal_type: formData.goal_type,
+            tech_tags: formData.tech_tags,
+            description: formData.description.trim(),
+            skill_level: formData.skill_level,
+            vibe: formData.vibe,
+            contact_handle: formData.contact_handle.trim(),
+            contact_method: formData.contact_method,
+        };
+
+        const { data: insertedData, error: insertError } = await supabase
+            .from("cards")
+            .insert([cardToInsert])
+            .select()
+            .single();
+
+
+        if (insertError || !insertedData) {
+            setIsLoading(false);
+            console.error(insertError);
+            setError(`Error posting goal: ${insertError?.message || 'Unknown error'}`);
             return;
         }
-        if (formData.tech_tags.length > 5) {
-            setError("Maximum of 5 tech tags allowed.");
-            return;
+
+        try {
+            const matches = await findMatches(cardToInsert);
+            const matchIds = matches.map(m => m.id);
+            const queryParams = new URLSearchParams({ matches: JSON.stringify(matchIds) });
+            router.push(`/success?${queryParams.toString()}`);
+
+        } catch (matchError) {
+            setIsLoading(false);
+            console.error("Error finding matches:", matchError);
+            setError("Goal posted, but failed to find matches. Check the homepage.");
         }
-
-
-        setIsLoading(true)
-        setError(null)
-
-        const supabase = createClient()
-
-        const { error: insertError } = await supabase.from("cards").insert([
-            {
-                goal_type: formData.goal_type,
-                tech_tags: formData.tech_tags,
-                description: formData.description.trim(),
-                skill_level: formData.skill_level,
-                vibe: formData.vibe,
-                contact_handle: formData.contact_handle.trim(),
-                contact_method: formData.contact_method,
-            },
-        ])
-
-        setIsLoading(false)
-
-        if (insertError) {
-            console.error(insertError)
-            setError(`Error posting goal: ${insertError.message}`)
-        } else {
-            router.push("/")
-            router.refresh();
-        }
-    }
+    };
 
     const inputStyle: React.CSSProperties = {
         padding: '8px 12px',
@@ -182,17 +197,7 @@ export default function PostGoal() {
             <p style={{ textAlign: 'center', color: '#aaa', marginTop: '-15px', marginBottom: '30px' }}>Your goal will be live for 14 days.</p>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div style={honeypotStyle} aria-hidden="true">
-                    <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
-                    <input
-                        type="text"
-                        id="honeypot-website"
-                        name="website" 
-                        tabIndex={-1}
-                        autoComplete="off" 
-                        onChange={handleChange}
-                    />
-                </div>
+
                 <label>
                     Your Goal:
                     <select name="goal_type" value={formData.goal_type} onChange={handleChange} style={selectStyle} required>
@@ -221,20 +226,20 @@ export default function PostGoal() {
                         <input
                             type="text"
                             value={techTagInput}
-                            onChange={(e) => { setTechTagInput(e.target.value); setError(null); }} // Clear error on change
+                            onChange={(e) => { setTechTagInput(e.target.value); setError(null); }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    e.preventDefault(); // Prevent form submission on Enter
+                                    e.preventDefault();
                                     handleAddTag();
                                 }
                             }}
                             placeholder="e.g., rust"
-                            style={{ ...inputStyle, flexGrow: 1 }} // Take remaining space
+                            style={{ ...inputStyle, flexGrow: 1 }}
                         />
                         <button
                             type="button"
                             onClick={handleAddTag}
-                            style={{ padding: '8px 15px', background: '#555', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }} // Prevent shrinking
+                            style={{ padding: '8px 15px', background: '#555', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}
                         >Add</button>
                     </div>
                     <div style={tagContainerStyle}>
@@ -247,7 +252,7 @@ export default function PostGoal() {
                                     style={removeTagButtonStyle}
                                     aria-label={`Remove ${tag} tag`}
                                 >
-                                    &times; {/* HTML entity for 'x' */}
+                                    &times;
                                 </button>
                             </span>
                         ))}
@@ -294,8 +299,20 @@ export default function PostGoal() {
                     />
                 </label>
 
-                {error && <p style={{ color: "#ff4d4d", textAlign: 'center', marginTop: '-10px' }}>{error}</p>}
+                <div style={honeypotStyle} aria-hidden="true">
+                    <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
+                    <input
+                        type="text"
+                        id="honeypot-website"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={formData.website}
+                        onChange={handleChange}
+                    />
+                </div>
 
+                {error && <p style={{ color: "#ff4d4d", textAlign: 'center', marginTop: '-10px' }}>{error}</p>}
 
                 <button type="submit" disabled={isLoading} style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}>
                     {isLoading ? "Posting..." : "Post Your Goal"}
