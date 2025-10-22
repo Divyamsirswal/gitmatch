@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from 'react';
+import Turnstile from "react-turnstile";
 
 type CardProps = {
     card: {
         id: string;
         formatted_created_at: string;
-        // created_at: string;
         goal_type: string;
         tech_tags: string[];
         description: string;
@@ -19,9 +19,48 @@ type CardProps = {
 
 export default function GoalCard({ card }: CardProps) {
     const [isContactVisible, setIsContactVisible] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [showCaptcha, setShowCaptcha] = useState(false);
+    const [captchaError, setCaptchaError] = useState<string | null>(null);
 
-    const handleRevealContact = () => {
-        setIsContactVisible(true);
+    const handleRevealClick = () => {
+        setShowCaptcha(true);
+        setCaptchaError(null);
+    };
+
+    const verifyTurnstileToken = async (token: string | null) => {
+        if (!token) {
+            setCaptchaError("CAPTCHA challenge failed. Please try again.");
+            setShowCaptcha(false);
+            return;
+        }
+
+        setIsVerifying(true);
+        setCaptchaError(null);
+
+        try {
+            const response = await fetch('/api/verify-turnstile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setIsContactVisible(true);
+                setShowCaptcha(false);
+            } else {
+                setCaptchaError(result.message || "Verification failed. Please try again.");
+                setShowCaptcha(false);
+            }
+        } catch (error) {
+            console.error("Error calling verification API:", error);
+            setCaptchaError("An error occurred during verification. Please try again.");
+            setShowCaptcha(false);
+        } finally {
+            setIsVerifying(false);
+        }
     };
 
     const cardStyle: React.CSSProperties = {
@@ -53,6 +92,8 @@ export default function GoalCard({ card }: CardProps) {
         fontSize: '0.9em',
     };
 
+    const captchaContainerStyle: React.CSSProperties = { marginTop: '10px' };
+
     return (
         <div key={card.id} style={cardStyle}>
             <h3 style={{ marginTop: 0, marginBottom: '10px' }}>{card.description}</h3>
@@ -71,9 +112,33 @@ export default function GoalCard({ card }: CardProps) {
                 {isContactVisible ? (
                     <span>{card.contact_handle}</span>
                 ) : (
-                    <button onClick={handleRevealContact} style={revealButtonStyle}>
-                        Reveal Contact
-                    </button>
+                    <>
+                        {!showCaptcha && (
+                            <button onClick={handleRevealClick} style={revealButtonStyle} disabled={isVerifying}>
+                                Reveal Contact
+                            </button>
+                        )}
+
+                        {showCaptcha && (
+                            <div style={captchaContainerStyle}>
+                                <Turnstile
+                                    sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY!}
+                                    onVerify={verifyTurnstileToken}
+                                    onError={() => {
+                                        setCaptchaError("CAPTCHA challenge failed to load. Please refresh.");
+                                        setShowCaptcha(false);
+                                    }}
+                                    onExpire={() => {
+                                        setCaptchaError("CAPTCHA challenge expired. Please click Reveal again.");
+                                        setShowCaptcha(false);
+                                    }}
+                                    theme="dark"
+                                />
+                                {isVerifying && <p style={{ fontSize: '0.8em', color: '#888', marginTop: '5px' }}>Verifying...</p>}
+                            </div>
+                        )}
+                        {captchaError && <p style={{ color: "#ff4d4d", fontSize: '0.8em', marginTop: '5px' }}>{captchaError}</p>}
+                    </>
                 )}
             </div>
             <p style={{ margin: '5px 0', fontSize: '0.8em', color: '#888' }}>

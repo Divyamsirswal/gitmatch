@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import { createClient } from '@/lib/supabaseServer';
 import GoalCard from '@/components/GoalCard';
@@ -34,18 +33,18 @@ export default async function Home() {
     console.error("Error fetching cards:", error);
   }
 
-  const pageStyle: React.CSSProperties = {
-    maxWidth: '800px',
-    margin: '40px auto',
-    padding: '20px',
-  };
-
   const formattedCards: FormattedCard[] = cards?.map(card => ({
     ...card,
     formatted_created_at: new Date(card.created_at).toLocaleDateString('en-IN', {
       day: '2-digit', month: '2-digit', year: 'numeric'
     })
   })) || [];
+
+  const pageStyle: React.CSSProperties = {
+    maxWidth: '800px',
+    margin: '40px auto',
+    padding: '20px',
+  };
 
   return (
     <main style={pageStyle}>
