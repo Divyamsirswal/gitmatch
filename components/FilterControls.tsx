@@ -44,48 +44,25 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
     };
 
 
-    const filterGroupStyle: React.CSSProperties = {
-        display: 'flex',
-        gap: '15px',
-        marginBottom: '20px',
-        alignItems: 'flex-end',
-        flexWrap: 'wrap'
-    };
-    const selectStyle: React.CSSProperties = {
-        padding: '8px 10px',
-        borderRadius: '4px',
-        border: '1px solid #555',
-        background: '#333',
-        color: 'white',
-        minWidth: '150px'
-    };
-    const buttonStyle: React.CSSProperties = {
-        padding: '8px 15px',
-        borderRadius: '5px',
-        border: 'none',
-        background: '#0070f3',
-        color: 'white',
-        cursor: 'pointer',
-        height: 'fit-content'
-    };
-    const resetButtonStyle: React.CSSProperties = { ...buttonStyle, background: '#555' };
+    const inputBaseClasses = "block w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white";
+    const labelClasses = "block text-xs font-medium text-gray-400 mb-1";
 
     return (
-        <div style={filterGroupStyle}>
+        <div className="flex flex-wrap items-end gap-4 mb-6">
             <div>
-                <label htmlFor="tech-filter" style={{ fontSize: '0.9em', display: 'block', marginBottom: '3px' }}>Tech:</label>
+                <label htmlFor="tech-filter" className={labelClasses}>Tech:</label>
                 <input
                     id="tech-filter"
                     type="text"
                     value={tech}
                     onChange={(e) => setTech(e.target.value.toLowerCase())}
-                    placeholder="e.g., rust, nextjs"
-                    style={selectStyle}
+                    placeholder="e.g., rust"
+                    className={`${inputBaseClasses} min-w-[150px]`}
                 />
             </div>
             <div>
-                <label htmlFor="level-filter" style={{ fontSize: '0.9em', display: 'block', marginBottom: '3px' }}>Level:</label>
-                <select id="level-filter" value={level} onChange={(e) => setLevel(e.target.value)} style={selectStyle}>
+                <label htmlFor="level-filter" className={labelClasses}>Level:</label>
+                <select id="level-filter" value={level} onChange={(e) => setLevel(e.target.value)} className={`${inputBaseClasses} min-w-[150px]`}>
                     <option value="">All Levels</option>
                     <option value="BEGINNER">Beginner</option>
                     <option value="INTERMEDIATE">Intermediate</option>
@@ -93,16 +70,22 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
                 </select>
             </div>
             <div>
-                <label htmlFor="goal-filter" style={{ fontSize: '0.9em', display: 'block', marginBottom: '3px' }}>Goal:</label>
-                <select id="goal-filter" value={goal} onChange={(e) => setGoal(e.target.value)} style={selectStyle}>
+                <label htmlFor="goal-filter" className={labelClasses}>Goal:</label>
+                <select id="goal-filter" value={goal} onChange={(e) => setGoal(e.target.value)} className={`${inputBaseClasses} min-w-[150px]`}>
                     <option value="">All Goals</option>
                     <option value="BUILD">Build</option>
                     <option value="LEARN">Learn</option>
                     <option value="SOLVE">Solve</option>
                 </select>
             </div>
-            <button onClick={handleFilterChange} style={buttonStyle}>Apply Filters</button>
-            <button onClick={handleResetFilters} style={resetButtonStyle}>Reset</button>
+            <button
+                onClick={handleFilterChange}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
+            >Apply Filters</button>
+            <button
+                onClick={handleResetFilters}
+                className="px-4 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors"
+            >Reset</button>
         </div>
     );
 }

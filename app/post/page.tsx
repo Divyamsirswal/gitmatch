@@ -130,126 +130,66 @@ export default function PostGoal() {
         }
     };
 
-    const inputStyle: React.CSSProperties = {
-        padding: '8px 12px',
-        borderRadius: '4px',
-        border: '1px solid #555',
-        background: '#333',
-        color: 'white',
-        width: '100%',
-        boxSizing: 'border-box',
-        marginTop: '5px',
-    };
+    const inputBaseClasses = "mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white";
+    const labelClasses = "block text-sm font-medium text-gray-300";
 
-    const selectStyle: React.CSSProperties = { ...inputStyle };
-    const textareaStyle: React.CSSProperties = { ...inputStyle, minHeight: '80px', resize: 'vertical' };
-    const buttonStyle: React.CSSProperties = {
-        padding: '10px 15px',
-        borderRadius: '5px',
-        border: 'none',
-        background: '#0070f3',
-        color: 'white',
-        cursor: 'pointer',
-        fontSize: '1em',
-        marginTop: '10px',
-    };
-    const tagContainerStyle: React.CSSProperties = {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '5px',
-        marginTop: '8px',
-    };
-
-    const tagStyle: React.CSSProperties = {
-        display: 'inline-flex',
-        alignItems: 'center',
-        background: '#0070f3',
-        color: 'white',
-        padding: '3px 8px',
-        borderRadius: '12px',
-        fontSize: '0.85em',
-        cursor: 'default',
-    };
-
-    const removeTagButtonStyle: React.CSSProperties = {
-        background: 'none',
-        border: 'none',
-        color: 'white',
-        marginLeft: '5px',
-        cursor: 'pointer',
-        padding: '0',
-        fontSize: '1em',
-        lineHeight: '1',
-    };
-
-    const honeypotStyle: React.CSSProperties = {
-        position: 'absolute',
-        left: '-5000px',
-        top: '-5000px',
-        opacity: 0,
-        pointerEvents: 'none',
-    };
 
 
     return (
-        <div style={{ maxWidth: "600px", margin: "40px auto", padding: "30px", background: "#222", borderRadius: "8px", boxShadow: "0 4px 15px rgba(0,0,0,0.2)" }}>
-            <h1 style={{ textAlign: 'center', marginBottom: '25px' }}>Post a New Goal</h1>
-            <p style={{ textAlign: 'center', color: '#aaa', marginTop: '-15px', marginBottom: '30px' }}>Your goal will be live for 14 days.</p>
+        <div className="max-w-xl mx-auto p-6 md:p-8 bg-gray-800 rounded-lg shadow-xl mt-10 border border-gray-700">
+            <h1 className="text-2xl font-semibold text-center text-white mb-2">Post a New Goal</h1>
+            <p className="text-center text-gray-400 text-sm mb-6">Your goal will be live for 14 days.</p>
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-                <label>
-                    Your Goal:
-                    <select name="goal_type" value={formData.goal_type} onChange={handleChange} style={selectStyle} required>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label htmlFor="goal_type" className={labelClasses}>Your Goal:</label>
+                    <select id="goal_type" name="goal_type" value={formData.goal_type} onChange={handleChange} className={inputBaseClasses} required>
                         <option value="BUILD">Build a Project</option>
                         <option value="LEARN">Learn a Skill</option>
                         <option value="SOLVE">Solve Problems (e.g., LeetCode)</option>
                     </select>
-                </label>
+                </div>
 
-                <label>
-                    Description (Be specific! Max 150 chars):
+                <div>
+                    <label htmlFor="description" className={labelClasses}>Description (Be specific! Max 150 chars):</label>
                     <textarea
+                        id="description"
                         name="description"
                         value={formData.description}
                         onChange={handleChange}
                         placeholder="e.g., Build a fast API in Rust with Axum for a portfolio piece"
                         required
                         maxLength={150}
-                        style={textareaStyle}
+                        className={`${inputBaseClasses} min-h-[80px] resize-y`} // Allow vertical resize
                     />
-                </label>
+                </div>
 
-                <label>
-                    Tech Tags (Max 5, press Enter or click Add):
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div>
+                    <label htmlFor="tech-input" className={labelClasses}>Tech Tags (Max 5, press Enter or click Add):</label>
+                    <div className="flex items-center gap-2 mt-1">
                         <input
+                            id="tech-input"
                             type="text"
                             value={techTagInput}
                             onChange={(e) => { setTechTagInput(e.target.value); setError(null); }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleAddTag();
-                                }
-                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             placeholder="e.g., rust"
-                            style={{ ...inputStyle, flexGrow: 1 }}
+                            className={`${inputBaseClasses} grow`} // Take available space
                         />
                         <button
                             type="button"
                             onClick={handleAddTag}
-                            style={{ padding: '8px 15px', background: '#555', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors shrink-0" // Prevent shrinking
                         >Add</button>
                     </div>
-                    <div style={tagContainerStyle}>
+                    <div className="mt-2 flex flex-wrap gap-2">
                         {formData.tech_tags.map((tag) => (
-                            <span key={tag} style={tagStyle}>
+                            <span key={tag} className="inline-flex items-center bg-blue-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">
                                 {tag}
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveTag(tag)}
-                                    style={removeTagButtonStyle}
+                                    className="ml-1.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-blue-200 hover:bg-blue-700 hover:text-white focus:outline-none focus:bg-blue-700 focus:text-white"
                                     aria-label={`Remove ${tag} tag`}
                                 >
                                     &times;
@@ -257,64 +197,63 @@ export default function PostGoal() {
                             </span>
                         ))}
                     </div>
-                </label>
+                </div>
 
-                <label>
-                    Your Skill Level (for this tech):
-                    <select name="skill_level" value={formData.skill_level} onChange={handleChange} style={selectStyle} required>
+                <div>
+                    <label htmlFor="skill_level" className={labelClasses}>Your Skill Level (for this tech):</label>
+                    <select id="skill_level" name="skill_level" value={formData.skill_level} onChange={handleChange} className={inputBaseClasses} required>
                         <option value="BEGINNER">Beginner (Just starting)</option>
                         <option value="INTERMEDIATE">Intermediate (Know the basics)</option>
                         <option value="ADVANCED">Advanced (Experienced)</option>
                     </select>
-                </label>
-
-                <label>
-                    Your Vibe:
-                    <select name="vibe" value={formData.vibe} onChange={handleChange} style={selectStyle} required>
+                </div>
+                <div>
+                    <label htmlFor="vibe" className={labelClasses}>Your Vibe:</label>
+                    <select id="vibe" name="vibe" value={formData.vibe} onChange={handleChange} className={inputBaseClasses} required>
                         <option value="CASUAL">Casual (1-2 check-ins/week)</option>
                         <option value="FOCUSED">Focused (Meet 2-3 times/week)</option>
                         <option value="INTENSE">Intense (Daily grind)</option>
                     </select>
-                </label>
-
-                <label>
-                    Contact Method:
-                    <select name="contact_method" value={formData.contact_method} onChange={handleChange} style={selectStyle} required>
+                </div>
+                <div>
+                    <label htmlFor="contact_method" className={labelClasses}>Contact Method:</label>
+                    <select id="contact_method" name="contact_method" value={formData.contact_method} onChange={handleChange} className={inputBaseClasses} required>
                         <option value="DISCORD">Discord</option>
                         <option value="TELEGRAM">Telegram</option>
                         <option value="LINKEDIN">LinkedIn</option>
                     </select>
-                </label>
-
-                <label>
-                    Your Contact Handle:
+                </div>
+                <div>
+                    <label htmlFor="contact_handle" className={labelClasses}>Your Contact Handle:</label>
                     <input
+                        id="contact_handle"
                         type="text"
                         name="contact_handle"
                         value={formData.contact_handle}
                         onChange={handleChange}
                         placeholder="e.g., myusername#1234 or your LinkedIn profile URL"
                         required
-                        style={inputStyle}
-                    />
-                </label>
-
-                <div style={honeypotStyle} aria-hidden="true">
-                    <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
-                    <input
-                        type="text"
-                        id="honeypot-website"
-                        name="website"
-                        tabIndex={-1}
-                        autoComplete="off"
-                        value={formData.website}
-                        onChange={handleChange}
+                        className={inputBaseClasses}
                     />
                 </div>
 
-                {error && <p style={{ color: "#ff4d4d", textAlign: 'center', marginTop: '-10px' }}>{error}</p>}
 
-                <button type="submit" disabled={isLoading} style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}>
+                {/* Honeypot - Keep hidden */}
+                <div className="absolute left-[-5000px]" aria-hidden="true">
+                    <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
+                    <input
+                        type="text" id="honeypot-website" name="website" tabIndex={-1} autoComplete="off"
+                        value={formData.website} onChange={handleChange}
+                    />
+                </div>
+
+                {error && <p className="text-red-500 text-sm text-center -mt-2">{error}</p>}
+
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                >
                     {isLoading ? "Posting..." : "Post Your Goal"}
                 </button>
 

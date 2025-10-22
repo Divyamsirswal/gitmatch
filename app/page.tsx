@@ -59,30 +59,25 @@ export default async function Home({
     })
   })) || [];
 
-  const pageStyle: React.CSSProperties = {
-    maxWidth: '800px',
-    margin: '40px auto',
-    padding: '20px',
-  };
 
   return (
-    <main style={pageStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '2em' }}>GitMatch</h1>
-        <Link href="/post" style={{ padding: '10px 15px', background: '#0070f3', color: 'white', borderRadius: '5px', textDecoration: 'none' }}>
+    <main className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="flex justify-between items-center mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-white">GitMatch</h1>
+        <Link href="/post" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
           + Post Your Goal
         </Link>
       </div>
 
       <FilterControls currentFilters={{ tech: techFilter, level: levelFilter, goal: goalFilter }} />
-      <hr style={{ margin: '20px 0', borderColor: '#444' }} />
+      <hr className="my-6 border-gray-700" />
 
-      {error && <p style={{ color: "red" }}>Error loading goals: {error.message}</p>}
+      {error && <p className="text-red-500 text-center">Error loading goals: {error.message}</p>}
 
       {!formattedCards || formattedCards.length === 0 && !error ? (
-        <p>No goals found matching your filters. Try broadening your search!</p>
+        <p className="text-center text-gray-400">No goals found matching your filters. Try broadening your search!</p>
       ) : (
-        <div>
+        <div className="grid grid-cols-1 gap-4 md:gap-6">
           {formattedCards.map((card: FormattedCard) => (
             <GoalCard key={card.id} card={card} />
           ))}
