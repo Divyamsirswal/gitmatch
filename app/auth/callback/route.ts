@@ -11,13 +11,25 @@ export async function GET(request: NextRequest) {
 
     if (code) {
         const supabase = createClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-            return NextResponse.redirect(origin);
+        const { error, data } = await supabase.auth.exchangeCodeForSession(
+            code,
+        );
+
+        if (error) {
+            const redirectUrl = new URL("/login", origin);
+            redirectUrl.searchParams.set(
+                "error",
+                `Could not authenticate user: ${error.message}`,
+            );
+            return NextResponse.redirect(redirectUrl);
         }
+        return NextResponse.redirect(origin);
     }
-    console.error("Error exchanging code for session in auth callback");
+
     const redirectUrl = new URL("/login", origin);
-    redirectUrl.searchParams.set("error", "Could not authenticate user");
+    redirectUrl.searchParams.set(
+        "error",
+        "Authentication failed: No code received.",
+    );
     return NextResponse.redirect(redirectUrl);
 }

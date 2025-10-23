@@ -29,7 +29,7 @@ export default function LoginPage() {
                     appearance={{ theme: ThemeSupa }}
                     theme="dark"
                     providers={['github', 'google']}
-                    redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`} // Use env var for site URL
+                    redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`}
                     onlyThirdPartyProviders={false}
                 />
             </div>
