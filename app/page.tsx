@@ -1,8 +1,9 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabaseServer';
 import GoalCard from '@/components/GoalCard';
 import FilterControls from '@/components/FilterControls';
+import AuthButton from '@/components/AuthButton';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,7 @@ type Card = {
   contact_method: string;
   email?: string;
 };
+
 type FormattedCard = Omit<Card, 'created_at'> & { formatted_created_at: string };
 
 
@@ -68,14 +70,18 @@ async function CardList({ techFilter, levelFilter, goalFilter }: {
 export default async function Home({
   searchParams
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
 
-  const techFilter = searchParams?.tech as string | undefined;
-  const levelFilter = searchParams?.level as string | undefined;
-  const goalFilter = searchParams?.goal as string | undefined;
-  const relisted = searchParams?.relisted === 'true';
-  const relistError = searchParams?.relist_error;
+  const resolvedParams = await searchParams;
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const techFilter = resolvedParams?.tech as string | undefined;
+  const levelFilter = resolvedParams?.level as string | undefined;
+  const goalFilter = resolvedParams?.goal as string | undefined;
+  const relisted = resolvedParams?.relisted === 'true';
+  const relistError = resolvedParams?.relist_error;
 
   let errorMessage = null;
   if (relistError) {
@@ -92,11 +98,21 @@ export default async function Home({
 
   return (
     <main className="max-w-4xl mx-auto p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6 md:mb-8">
+      <div className="flex justify-between items-center mb-6 md:mb-8 gap-4">
         <h1 className="text-3xl md:text-4xl font-bold text-white">GitMatch</h1>
-        <Link href="/post" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
-          + Post Your Goal
-        </Link>
+        <div className="flex items-center gap-3">
+          {user && (
+            <Link
+              href="/post"
+              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs sm:text-sm font-medium transition-colors"
+            >
+              + Post Goal
+            </Link>
+          )}
+          <Suspense fallback={<div className="h-9 w-20 rounded-md bg-gray-700 animate-pulse"></div>}>
+            <AuthButton />
+          </Suspense>
+        </div>
       </div>
 
       {relisted && (
