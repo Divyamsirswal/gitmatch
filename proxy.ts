@@ -33,6 +33,14 @@ export async function proxy(request: NextRequest) {
             },
         );
         supabaseClientCreated = true;
+        const requestUrl = request.nextUrl.pathname;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user && requestUrl === "/post") {
+            console.log(
+                "Proxy: Unauthorized access to /post detected. Redirecting to /login.",
+            );
+            return NextResponse.redirect(new URL("/login", request.url));
+        }
     } catch (e) {
         let errorMessage = "Unknown error in proxy";
         if (e instanceof Error) errorMessage = e.message;

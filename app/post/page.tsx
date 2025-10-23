@@ -42,10 +42,7 @@ export default function PostGoal() {
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleAddTag = () => {
@@ -55,10 +52,10 @@ export default function PostGoal() {
             if (newTag) {
                 setFormData((prev) => ({ ...prev, tech_tags: [...prev.tech_tags, newTag] }));
                 setTechTagInput("");
-            } else { setError("Tag cannot be empty."); }
-        } else if (formData.tech_tags.length >= 5) { setError("Maximum of 5 tags allowed."); }
-        else if (!techTagInput) { setError("Tag cannot be empty."); }
-        else if (formData.tech_tags.includes(techTagInput.trim().toLowerCase())) { setError("Tag already added."); }
+            } else { toast.error("Tag cannot be empty."); }
+        } else if (formData.tech_tags.length >= 5) { toast.error("Maximum of 5 tags allowed."); }
+        else if (!techTagInput) { toast.error("Tag cannot be empty."); }
+        else if (formData.tech_tags.includes(techTagInput.trim().toLowerCase())) { toast.error("Tag already added."); }
     };
 
     const handleRemoveTag = (tagToRemove: string) => {
@@ -68,12 +65,14 @@ export default function PostGoal() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setError(null);
 
         if (formData.website) { console.warn("Honeypot filled."); router.push('/'); return; }
-        if (formData.tech_tags.length === 0 || formData.tech_tags.length > 5) { setError("Please use between 1 and 5 tech tags."); return; }
+        if (formData.tech_tags.length === 0 || formData.tech_tags.length > 5) {
+            toast.error("Please use between 1 and 5 tech tags."); return;
+        }
 
         setIsLoading(true);
-        setError(null);
 
         const supabase = createClient();
         const cardToInsert = {
@@ -86,21 +85,31 @@ export default function PostGoal() {
             .from("cards").insert([cardToInsert]).select().single();
 
         if (insertError || !insertedData) {
-            toast.error(`Error posting goal: ${insertError?.message || 'Unknown error'}`); 
-            setIsLoading(false); console.error("Insert Error:", insertError);
-            setError(`Error posting goal: ${insertError?.message || 'Unknown error during insert'}`); return;
+            setIsLoading(false);
+            console.error("Insert Error:", insertError);
+            let userFriendlyError = "An unknown error occurred while posting.";
+            if (insertError) {
+                if (insertError.message.includes("violates row-level security policy")) {
+                    userFriendlyError = "You must be logged in to post a goal. Please log in or sign up.";
+                } else {
+                    userFriendlyError = `Error posting goal: ${insertError.message}`;
+                }
+            }
+            toast.error(userFriendlyError);
+            return;
         }
 
         try {
             const matches = await findMatches(cardToInsert);
             const matchIds = matches.map(m => m.id);
             const queryParams = new URLSearchParams({ matches: JSON.stringify(matchIds) });
-            router.push(`/success?${queryParams.toString()}`);
             toast.success('Goal posted successfully!');
+            router.push(`/success?${queryParams.toString()}`);
         } catch (matchError) {
-            toast.error("Goal posted, but failed to find matches.");
-            setIsLoading(false); console.error("Error finding matches:", matchError);
-            setError("Goal posted, but failed to find matches. Check the homepage."); router.push("/");
+            setIsLoading(false);
+            console.error("Error finding matches:", matchError);
+            toast.error("Goal posted, but failed to find matches. Check the homepage.");
+            router.push("/");
         }
     };
 
@@ -167,11 +176,7 @@ export default function PostGoal() {
                     <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
                     <input type="text" id="honeypot-website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
                 </div>
-                {error && (
-                    <p className="text-red-500 text-sm text-center bg-red-100 border border-red-300 p-2 rounded-md -mt-2 mb-4">
-                        {error}
-                    </p>
-                )}
+                {/* Removed inline error display, relying on toast */}
                 <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-70 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                     {isLoading ? (
                         <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Posting...</>

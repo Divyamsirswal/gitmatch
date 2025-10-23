@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Turnstile from "react-turnstile";
+import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { deleteCard } from '@/app/actions';
 
 type CardProps = {
     card: {
@@ -15,14 +17,19 @@ type CardProps = {
         vibe: string;
         contact_handle: string;
         contact_method: string;
+        user_id: string;
     };
+    currentUserId?: string;
 };
 
-export default function GoalCard({ card }: CardProps) {
+export default function GoalCard({ card, currentUserId }: CardProps) {
     const [isContactVisible, setIsContactVisible] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [showCaptcha, setShowCaptcha] = useState(false);
     const [captchaError, setCaptchaError] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isOwner = card.user_id === currentUserId;
 
     const handleRevealClick = () => {
         setShowCaptcha(true);
@@ -31,15 +38,12 @@ export default function GoalCard({ card }: CardProps) {
 
     const verifyTurnstileToken = async (token: string | null) => {
         if (!token) {
-            setCaptchaError("CAPTCHA challenge failed. Please try again.");
-            setShowCaptcha(false);
             toast.error("CAPTCHA challenge failed. Please try again.");
+            setShowCaptcha(false);
             return;
         }
-
         setIsVerifying(true);
         setCaptchaError(null);
-
         try {
             const response = await fetch('/api/verify-turnstile', {
                 method: 'POST',
@@ -47,27 +51,78 @@ export default function GoalCard({ card }: CardProps) {
                 body: JSON.stringify({ token }),
             });
             const result = await response.json();
-
             if (result.success) {
                 setIsContactVisible(true);
                 setShowCaptcha(false);
             } else {
-                setCaptchaError(result.message || "Verification failed. Please try again.");
-                setShowCaptcha(false);
                 toast.error(result.message || "Verification failed. Please try again.");
+                setShowCaptcha(false);
             }
         } catch (error) {
             console.error("Error calling verification API:", error);
-            setCaptchaError("An error occurred during verification. Please try again.");
+            toast.error("An error occurred during verification. Please try again.");
             setShowCaptcha(false);
         } finally {
             setIsVerifying(false);
         }
     };
 
+    const handleDelete = async () => {
+        if (!isOwner) return;
+        if (!window.confirm("Are you sure you want to delete this goal card? This action cannot be undone.")) {
+            return;
+        }
+
+        setIsDeleting(true);
+        const toastId = toast.loading('Deleting card...');
+
+        try {
+            const result = await deleteCard(card.id);
+
+            toast.dismiss(toastId);
+
+            if (result.success) {
+                toast.success("Card deleted successfully!");
+            } else {
+                toast.error(`Failed to delete card: ${result.error || 'Unknown error'}`);
+            }
+        } catch (err) {
+            toast.dismiss(toastId);
+            let errorMessage = "An unexpected error occurred during deletion.";
+            if (err instanceof Error) errorMessage = err.message;
+            toast.error(errorMessage);
+            console.error("Delete action error:", err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+
     return (
-        <div key={card.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md text-gray-200">
-            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-words">{card.description}</h3>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md text-gray-200 relative">
+            {isOwner && (
+                <div className="absolute top-2 right-2 flex gap-2 z-10">
+                    <Link
+                        href={`/edit/${card.id}`}
+                        className="p-1 text-xs bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
+                        aria-label="Edit Card"
+                        title="Edit Card"
+                    >
+                        ✏️
+                    </Link>
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="p-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 transition-colors"
+                        aria-label="Delete Card"
+                        title="Delete Card"
+                    >
+                        {isDeleting ? '⏳' : '🗑️'}
+                    </button>
+                </div>
+            )}
+
+            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-words pr-16">{card.description}</h3>
             <div className="mb-3 flex flex-wrap gap-2">
                 {card.tech_tags?.map((tag: string) => (
                     <span key={tag} className="bg-blue-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full lowercase">
@@ -83,7 +138,7 @@ export default function GoalCard({ card }: CardProps) {
             <div className="text-sm text-gray-400 my-2">
                 <span className="font-medium text-gray-300">Contact:</span> {card.contact_method} @{' '}
                 {isContactVisible ? (
-                    <span className="text-gray-100">{card.contact_handle}</span>
+                    <span className="text-gray-100 break-all">{card.contact_handle}</span>
                 ) : (
                     <>
                         {!showCaptcha && (
@@ -98,10 +153,10 @@ export default function GoalCard({ card }: CardProps) {
                         {showCaptcha && (
                             <div className="mt-2 relative">
                                 <Turnstile
-                                    sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY!}
+                                    sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSILE_SITE_KEY!}
                                     onVerify={verifyTurnstileToken}
-                                    onError={() => { setCaptchaError("CAPTCHA challenge failed to load. Please refresh."); setShowCaptcha(false); }}
-                                    onExpire={() => { setCaptchaError("CAPTCHA challenge expired. Please click Reveal again."); setShowCaptcha(false); }}
+                                    onError={() => { toast.error("CAPTCHA challenge failed to load. Please refresh."); setShowCaptcha(false); }}
+                                    onExpire={() => { toast.error("CAPTCHA challenge expired. Please click Reveal again."); setShowCaptcha(false); }}
                                     theme="dark"
                                 />
                                 {isVerifying && (
@@ -114,11 +169,6 @@ export default function GoalCard({ card }: CardProps) {
                                     </div>
                                 )}
                             </div>
-                        )}
-                        {captchaError && (
-                            <p className="text-red-500 text-xs mt-1 bg-red-100 border border-red-300 p-1 rounded">
-                                {captchaError}
-                            </p>
                         )}
                     </>
                 )}

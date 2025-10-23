@@ -19,15 +19,16 @@ type Card = {
   contact_handle: string;
   contact_method: string;
   email?: string;
+  user_id: string; // Ensure user_id is included
 };
-
 type FormattedCard = Omit<Card, 'created_at'> & { formatted_created_at: string };
 
 
-async function CardList({ techFilter, levelFilter, goalFilter }: {
+async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUserId }: {
   techFilter?: string;
   levelFilter?: string;
   goalFilter?: string;
+  currentUserId?: string;
 }) {
   const supabase = createClient();
   let query = supabase.from('cards').select('*').order('created_at', { ascending: false });
@@ -61,7 +62,7 @@ async function CardList({ techFilter, levelFilter, goalFilter }: {
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       {formattedCards.map((card: FormattedCard) => (
-        <GoalCard key={card.id} card={card} />
+        <GoalCard key={card.id} card={card} currentUserId={currentUserId} />
       ))}
     </div>
   );
@@ -76,6 +77,7 @@ export default async function Home({
   const resolvedParams = await searchParams;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id;
 
   const techFilter = resolvedParams?.tech as string | undefined;
   const levelFilter = resolvedParams?.level as string | undefined;
@@ -99,7 +101,7 @@ export default async function Home({
   return (
     <main className="max-w-4xl mx-auto p-4 md:p-8">
       <div className="flex justify-between items-center mb-6 md:mb-8 gap-4">
-        <Link className="text-3xl md:text-4xl font-bold text-white" href={'/'}>GitMatch</Link>
+        <h1 className="text-3xl md:text-4xl font-bold text-white">GitMatch</h1>
         <div className="flex items-center gap-3">
           {user && (
             <Link
@@ -130,10 +132,11 @@ export default async function Home({
       <hr className="my-6 border-gray-700" />
 
       <Suspense fallback={<p className="text-center text-gray-400">Loading goals...</p>}>
-        <CardList
+        <CardListWithUser
           techFilter={techFilter}
           levelFilter={levelFilter}
           goalFilter={goalFilter}
+          currentUserId={currentUserId}
         />
       </Suspense>
 

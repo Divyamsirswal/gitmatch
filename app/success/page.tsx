@@ -13,6 +13,7 @@ type Card = {
     vibe: string;
     contact_handle: string;
     contact_method: string;
+    user_id: string;
 };
 type FormattedCard = Omit<Card, 'created_at'> & { formatted_created_at: string };
 
@@ -58,7 +59,7 @@ export default async function SuccessPage({
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-    const resolvedParams = await searchParams; 
+    const resolvedParams = await searchParams;
     let matchIds: string[] = [];
     try {
         const matchesParam = resolvedParams?.matches;
