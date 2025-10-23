@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabaseServer';
 import GoalCard from '@/components/GoalCard';
 import FilterControls from '@/components/FilterControls';
 import AuthButton from '@/components/AuthButton';
+import SkeletonCard from '@/components/SkeletonCard';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -131,7 +132,13 @@ export default async function Home({
       <FilterControls currentFilters={{ tech: techFilter, level: levelFilter, goal: goalFilter }} />
       <hr className="my-6 border-gray-700" />
 
-      <Suspense fallback={<p className="text-center text-gray-400">Loading goals...</p>}>
+      <Suspense fallback={<p className="text-center text-gray-400">
+        <div className="grid grid-cols-1 gap-4 md:gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </p>}>
         <CardListWithUser
           techFilter={techFilter}
           levelFilter={levelFilter}

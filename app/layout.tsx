@@ -32,6 +32,18 @@ export default function RootLayout({
         <Toaster
           position="top-center"
           reverseOrder={false}
+          toastOptions={{
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+            },
+            error: {
+              duration: 5000,
+            },
+          }}
         />
       </body>
     </html>
