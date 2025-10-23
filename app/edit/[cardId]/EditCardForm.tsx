@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateCard } from '@/app/actions';
 import toast from 'react-hot-toast';
+import { AVAILABILITY_SLOTS, TIMEZONES } from '@/lib/constants';
 
 type CardData = {
     id: string;
@@ -17,6 +18,8 @@ type CardData = {
     contact_handle: string;
     contact_method: string;
     email?: string | null;
+    timezone?: string | null; // Added
+    availability?: string[] | null; // Added
     user_id: string;
 };
 
@@ -29,6 +32,8 @@ type EditFormData = {
     contact_handle: string;
     contact_method: string;
     email?: string | null;
+    timezone?: string | null; // Added
+    availability?: string[]; // Added
 };
 
 export default function EditCardForm({ card }: { card: CardData }) {
@@ -43,6 +48,8 @@ export default function EditCardForm({ card }: { card: CardData }) {
         contact_handle: card.contact_handle || '',
         contact_method: card.contact_method,
         email: card.email || '',
+        timezone: card.timezone || '', // Initialize
+        availability: card.availability || [], // Initialize
     });
     const [techTagInput, setTechTagInput] = useState("");
 
@@ -51,6 +58,18 @@ export default function EditCardForm({ card }: { card: CardData }) {
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAvailabilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value, checked } = e.target;
+        setFormData(prev => {
+            const currentAvailability = prev.availability || [];
+            if (checked) {
+                return { ...prev, availability: [...currentAvailability, value] };
+            } else {
+                return { ...prev, availability: currentAvailability.filter(slot => slot !== value) };
+            }
+        });
     };
 
     const handleAddTag = () => {
@@ -76,9 +95,17 @@ export default function EditCardForm({ card }: { card: CardData }) {
         }
 
         startTransition(async () => {
-            const dataToUpdate = {
-                ...formData,
+            const dataToUpdate: EditFormData = {
+                goal_type: formData.goal_type,
+                tech_tags: formData.tech_tags,
+                description: formData.description.trim(),
+                skill_level: formData.skill_level,
+                vibe: formData.vibe,
+                contact_handle: formData.contact_handle.trim(),
+                contact_method: formData.contact_method,
                 email: formData.email?.trim() || null,
+                timezone: formData.timezone || null, // Ensure null if empty
+                availability: (formData.availability && formData.availability.length > 0) ? formData.availability : undefined, // Ensure null if empty
             };
             const result = await updateCard(card.id, dataToUpdate);
 
@@ -145,10 +172,34 @@ export default function EditCardForm({ card }: { card: CardData }) {
                     <input id="contact_handle" type="text" name="contact_handle" value={formData.contact_handle} onChange={handleChange} required className={inputBaseClasses} />
                 </div>
                 <div>
+                    <label htmlFor="timezone" className={labelClasses}>Timezone (Optional):</label>
+                    <select id="timezone" name="timezone" value={formData.timezone || ''} onChange={handleChange} className={inputBaseClasses}>
+                        <option value="">Select your timezone</option>
+                        {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className={labelClasses}>Availability (Optional):</label>
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                        {AVAILABILITY_SLOTS.map(slot => (
+                            <label key={slot.id} className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="availability"
+                                    value={slot.id}
+                                    checked={formData.availability?.includes(slot.id)}
+                                    onChange={handleAvailabilityChange}
+                                    className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-offset-0 focus:ring-opacity-50"
+                                />
+                                <span>{slot.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+                <div>
                     <label htmlFor="email" className={labelClasses}>Email (Optional):</label>
                     <input id="email" type="email" name="email" value={formData.email || ''} onChange={handleChange} className={inputBaseClasses} />
                 </div>
-
                 <button type="submit" disabled={isPending} className="w-full flex justify-center items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md disabled:opacity-70 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                     {isPending ? (
                         <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating...</>

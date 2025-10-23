@@ -5,6 +5,7 @@ import GoalCard from '@/components/GoalCard';
 import FilterControls from '@/components/FilterControls';
 import AuthButton from '@/components/AuthButton';
 import SkeletonCard from '@/components/SkeletonCard';
+import PaginationControls from '@/components/PaginationControls';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -20,26 +21,37 @@ type Card = {
   contact_handle: string;
   contact_method: string;
   email?: string;
-  user_id: string; // Ensure user_id is included
+  user_id: string;
+  timezone?: string | null;
+  availability?: string[] | null;
 };
 type FormattedCard = Omit<Card, 'created_at'> & { formatted_created_at: string };
 
+const ITEMS_PER_PAGE = 10;
 
-async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUserId }: {
+async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUserId, currentPage }: {
   techFilter?: string;
   levelFilter?: string;
   goalFilter?: string;
   currentUserId?: string;
+  currentPage: number;
 }) {
   const supabase = createClient();
-  let query = supabase.from('cards').select('*').order('created_at', { ascending: false });
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE - 1;
+
+  let query = supabase.from('cards')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(startIndex, endIndex);
 
   if (techFilter) query = query.contains('tech_tags', [techFilter.trim().toLowerCase()]);
   if (levelFilter) query = query.eq('skill_level', levelFilter);
   if (goalFilter) query = query.eq('goal_type', goalFilter);
 
-  const { data: cards, error } = await query;
-
+  const { data: cards, error, count } = await query;
+  const totalCount = count ?? 0;
   if (error) {
     console.error("Error fetching cards:", error);
     return <p className="text-red-500 text-center">Error loading goals: {error.message}</p>;
@@ -52,6 +64,8 @@ async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUs
     })
   })) || [];
 
+  const totalPages = count ? Math.ceil(count / ITEMS_PER_PAGE) : 1;
+
   if (formattedCards.length === 0) {
     return (
       <p className="text-center text-gray-400">
@@ -61,10 +75,20 @@ async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUs
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:gap-6">
-      {formattedCards.map((card: FormattedCard) => (
-        <GoalCard key={card.id} card={card} currentUserId={currentUserId} />
-      ))}
+    <div>
+      <div className="grid grid-cols-1 gap-4 md:gap-6">
+        {formattedCards.map((card: FormattedCard) => (
+          <GoalCard key={card.id} card={card} currentUserId={currentUserId} />
+        ))}
+      </div>
+      <div className="mt-6 text-center text-gray-400 text-sm">
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+      </div>
     </div>
   );
 }
@@ -85,6 +109,9 @@ export default async function Home({
   const goalFilter = resolvedParams?.goal as string | undefined;
   const relisted = resolvedParams?.relisted === 'true';
   const relistError = resolvedParams?.relist_error;
+
+  const page = resolvedParams?.page ? parseInt(resolvedParams.page as string, 10) : 1;
+  const currentPage = isNaN(page) || page < 1 ? 1 : page;
 
   let errorMessage = null;
   if (relistError) {
@@ -132,18 +159,19 @@ export default async function Home({
       <FilterControls currentFilters={{ tech: techFilter, level: levelFilter, goal: goalFilter }} />
       <hr className="my-6 border-gray-700" />
 
-      <Suspense fallback={<p className="text-center text-gray-400">
+      <Suspense fallback={
         <div className="grid grid-cols-1 gap-4 md:gap-6">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      </p>}>
+      }>
         <CardListWithUser
           techFilter={techFilter}
           levelFilter={levelFilter}
           goalFilter={goalFilter}
           currentUserId={currentUserId}
+          currentPage={currentPage}
         />
       </Suspense>
 

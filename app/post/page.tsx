@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { findMatches } from './action';
 import toast from 'react-hot-toast';
+import { AVAILABILITY_SLOTS, TIMEZONES } from "@/lib/constants";
 
 export type Card = {
     id?: string;
@@ -17,6 +18,8 @@ export type Card = {
     contact_handle: string;
     contact_method: string;
     email?: string;
+    timezone?: string;
+    availability?: string[];
     website?: string;
     formatted_created_at?: string;
 };
@@ -32,11 +35,12 @@ export default function PostGoal() {
         contact_handle: "",
         contact_method: "DISCORD",
         email: "",
+        timezone: "",
+        availability: [],
         website: "",
     });
     const [techTagInput, setTechTagInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -45,8 +49,20 @@ export default function PostGoal() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const handleAvailabilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value, checked } = e.target;
+        setFormData(prev => {
+            const currentAvailability = prev.availability || [];
+            if (checked) {
+                return { ...prev, availability: [...currentAvailability, value] };
+            } else {
+                return { ...prev, availability: currentAvailability.filter(slot => slot !== value) };
+            }
+        });
+    };
+
+
     const handleAddTag = () => {
-        setError(null);
         if (techTagInput && formData.tech_tags.length < 5 && !formData.tech_tags.includes(techTagInput.trim().toLowerCase())) {
             const newTag = techTagInput.trim().toLowerCase();
             if (newTag) {
@@ -60,12 +76,10 @@ export default function PostGoal() {
 
     const handleRemoveTag = (tagToRemove: string) => {
         setFormData((prev) => ({ ...prev, tech_tags: prev.tech_tags.filter(tag => tag !== tagToRemove) }));
-        setError(null);
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setError(null);
 
         if (formData.website) { console.warn("Honeypot filled."); router.push('/'); return; }
         if (formData.tech_tags.length === 0 || formData.tech_tags.length > 5) {
@@ -79,37 +93,43 @@ export default function PostGoal() {
             goal_type: formData.goal_type, tech_tags: formData.tech_tags, description: formData.description.trim(),
             skill_level: formData.skill_level, vibe: formData.vibe, contact_handle: formData.contact_handle.trim(),
             contact_method: formData.contact_method, email: formData.email?.trim() || undefined,
+            timezone: formData.timezone || undefined, // Add timezone
+            availability: formData.availability?.length || "" ? formData.availability : undefined,
         };
 
         const { data: insertedData, error: insertError } = await supabase
             .from("cards").insert([cardToInsert]).select().single();
 
         if (insertError || !insertedData) {
-            setIsLoading(false);
-            console.error("Insert Error:", insertError);
+            setIsLoading(false); console.error("Insert Error:", insertError);
             let userFriendlyError = "An unknown error occurred while posting.";
-            if (insertError) {
-                if (insertError.message.includes("violates row-level security policy")) {
-                    userFriendlyError = "You must be logged in to post a goal. Please log in or sign up.";
-                } else {
-                    userFriendlyError = `Error posting goal: ${insertError.message}`;
-                }
-            }
-            toast.error(userFriendlyError);
-            return;
+            if (insertError?.message.includes("violates row-level security policy")) {
+                userFriendlyError = "You must be logged in to post a goal. Please log in or sign up.";
+            } else { userFriendlyError = `Error: ${insertError?.message || 'DB error'}`; }
+            toast.error(userFriendlyError); return;
         }
 
         try {
-            const matches = await findMatches(cardToInsert);
+            const inputForMatching = {
+                goal_type: cardToInsert.goal_type,
+                tech_tags: cardToInsert.tech_tags,
+                description: cardToInsert.description,
+                skill_level: cardToInsert.skill_level,
+                vibe: cardToInsert.vibe,
+                contact_handle: cardToInsert.contact_handle,
+                contact_method: cardToInsert.contact_method,
+                email: cardToInsert.email,
+                timezone: cardToInsert.timezone,
+                availability: cardToInsert.availability
+            };
+            const matches = await findMatches(inputForMatching);
             const matchIds = matches.map(m => m.id);
             const queryParams = new URLSearchParams({ matches: JSON.stringify(matchIds) });
             toast.success('Goal posted successfully!');
             router.push(`/success?${queryParams.toString()}`);
         } catch (matchError) {
-            setIsLoading(false);
-            console.error("Error finding matches:", matchError);
-            toast.error("Goal posted, but failed to find matches. Check the homepage.");
-            router.push("/");
+            setIsLoading(false); console.error("Error finding matches:", matchError);
+            toast.error("Goal posted, but failed to find matches. Check the homepage."); router.push("/");
         }
     };
 
@@ -134,7 +154,7 @@ export default function PostGoal() {
                 <div>
                     <label htmlFor="tech-input" className={labelClasses}>Tech Tags (Max 5, press Enter or click Add):</label>
                     <div className="flex items-center gap-2 mt-1">
-                        <input id="tech-input" type="text" value={techTagInput} onChange={(e) => { setTechTagInput(e.target.value); setError(null); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }} placeholder="e.g., rust" className={`${inputBaseClasses} grow`} />
+                        <input id="tech-input" type="text" value={techTagInput} onChange={(e) => setTechTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }} placeholder="e.g., rust" className={`${inputBaseClasses} grow`} />
                         <button type="button" onClick={handleAddTag} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md transition-colors shrink-0">Add</button>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -169,6 +189,31 @@ export default function PostGoal() {
                     <input id="contact_handle" type="text" name="contact_handle" value={formData.contact_handle} onChange={handleChange} placeholder="e.g., myusername#1234 or your LinkedIn profile URL" required className={inputBaseClasses} />
                 </div>
                 <div>
+                    <label htmlFor="timezone" className={labelClasses}>Timezone (Optional):</label>
+                    <select id="timezone" name="timezone" value={formData.timezone} onChange={handleChange} className={inputBaseClasses}>
+                        <option value="">Select your timezone</option>
+                        {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className={labelClasses}>Availability (Optional - Select all that apply):</label>
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                        {AVAILABILITY_SLOTS.map(slot => (
+                            <label key={slot.id} className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="availability"
+                                    value={slot.id}
+                                    checked={formData.availability?.includes(slot.id)}
+                                    onChange={handleAvailabilityChange}
+                                    className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-offset-0 focus:ring-opacity-50"
+                                />
+                                <span>{slot.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+                <div>
                     <label htmlFor="email" className={labelClasses}>Email (Optional):<span className="text-xs text-gray-400 ml-1">- Get a reminder before your card expires. Never shared publicly.</span></label>
                     <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" className={inputBaseClasses} />
                 </div>
@@ -176,7 +221,6 @@ export default function PostGoal() {
                     <label htmlFor="honeypot-website">Do not fill this out if you are human:</label>
                     <input type="text" id="honeypot-website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
                 </div>
-                {/* Removed inline error display, relying on toast */}
                 <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-70 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                     {isLoading ? (
                         <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Posting...</>
