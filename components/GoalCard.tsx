@@ -28,6 +28,7 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
     const [showCaptcha, setShowCaptcha] = useState(false);
     const [captchaError, setCaptchaError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isHidden, setIsHidden] = useState(false);
 
     const isOwner = card.user_id === currentUserId;
 
@@ -78,11 +79,11 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
 
         try {
             const result = await deleteCard(card.id);
-
             toast.dismiss(toastId);
 
             if (result.success) {
                 toast.success("Card deleted successfully!");
+                setIsHidden(true);
             } else {
                 toast.error(`Failed to delete card: ${result.error || 'Unknown error'}`);
             }
@@ -97,6 +98,9 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
         }
     };
 
+    if (isHidden) {
+        return null;
+    }
 
     return (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md text-gray-200 relative">
@@ -122,7 +126,7 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
                 </div>
             )}
 
-            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-words pr-16">{card.description}</h3>
+            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-word pr-16">{card.description}</h3>
             <div className="mb-3 flex flex-wrap gap-2">
                 {card.tech_tags?.map((tag: string) => (
                     <span key={tag} className="bg-blue-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full lowercase">
