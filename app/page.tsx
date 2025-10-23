@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabaseServer';
 import GoalCard from '@/components/GoalCard';
@@ -16,40 +17,28 @@ type Card = {
   vibe: string;
   contact_handle: string;
   contact_method: string;
+  email?: string;
 };
 type FormattedCard = Omit<Card, 'created_at'> & { formatted_created_at: string };
 
-export default async function Home({
-  searchParams
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+
+async function CardList({ techFilter, levelFilter, goalFilter }: {
+  techFilter?: string;
+  levelFilter?: string;
+  goalFilter?: string;
 }) {
-  const resolvedParams = await searchParams;
   const supabase = createClient();
+  let query = supabase.from('cards').select('*').order('created_at', { ascending: false });
 
-  const techFilter = resolvedParams?.tech as string | undefined;
-  const levelFilter = resolvedParams?.level as string | undefined;
-  const goalFilter = resolvedParams?.goal as string | undefined;
-
-  let query = supabase
-    .from('cards')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (techFilter) {
-    query = query.contains('tech_tags', [techFilter]);
-  }
-  if (levelFilter) {
-    query = query.eq('skill_level', levelFilter);
-  }
-  if (goalFilter) {
-    query = query.eq('goal_type', goalFilter);
-  }
+  if (techFilter) query = query.contains('tech_tags', [techFilter.trim().toLowerCase()]);
+  if (levelFilter) query = query.eq('skill_level', levelFilter);
+  if (goalFilter) query = query.eq('goal_type', goalFilter);
 
   const { data: cards, error } = await query;
 
   if (error) {
     console.error("Error fetching cards:", error);
+    return <p className="text-red-500 text-center">Error loading goals: {error.message}</p>;
   }
 
   const formattedCards: FormattedCard[] = cards?.map(card => ({
@@ -59,6 +48,47 @@ export default async function Home({
     })
   })) || [];
 
+  if (formattedCards.length === 0) {
+    return (
+      <p className="text-center text-gray-400">
+        {techFilter || levelFilter || goalFilter ? 'No goals found matching your filters. Try broadening your search!' : 'No goals posted yet. Be the first!'}
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:gap-6">
+      {formattedCards.map((card: FormattedCard) => (
+        <GoalCard key={card.id} card={card} />
+      ))}
+    </div>
+  );
+}
+
+export default async function Home({
+  searchParams
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
+
+  const techFilter = searchParams?.tech as string | undefined;
+  const levelFilter = searchParams?.level as string | undefined;
+  const goalFilter = searchParams?.goal as string | undefined;
+  const relisted = searchParams?.relisted === 'true';
+  const relistError = searchParams?.relist_error;
+
+  let errorMessage = null;
+  if (relistError) {
+    switch (relistError) {
+      case 'missing_id':
+      case 'server_config':
+      case 'failed':
+        errorMessage = "Sorry, there was an error relisting your card. Please try posting again if needed.";
+        break;
+      default:
+        errorMessage = "An unknown error occurred during relisting.";
+    }
+  }
 
   return (
     <main className="max-w-4xl mx-auto p-4 md:p-8">
@@ -69,20 +99,28 @@ export default async function Home({
         </Link>
       </div>
 
+      {relisted && (
+        <p className="p-3 mb-4 text-center text-sm text-green-800 bg-green-100 rounded-md border border-green-200">
+          Your goal card has been successfully relisted for another 14 days!
+        </p>
+      )}
+      {errorMessage && !relisted && (
+        <p className="p-3 mb-4 text-center text-sm text-red-800 bg-red-100 rounded-md border border-red-200">
+          {errorMessage}
+        </p>
+      )}
+
       <FilterControls currentFilters={{ tech: techFilter, level: levelFilter, goal: goalFilter }} />
       <hr className="my-6 border-gray-700" />
 
-      {error && <p className="text-red-500 text-center">Error loading goals: {error.message}</p>}
+      <Suspense fallback={<p className="text-center text-gray-400">Loading goals...</p>}>
+        <CardList
+          techFilter={techFilter}
+          levelFilter={levelFilter}
+          goalFilter={goalFilter}
+        />
+      </Suspense>
 
-      {!formattedCards || formattedCards.length === 0 && !error ? (
-        <p className="text-center text-gray-400">No goals found matching your filters. Try broadening your search!</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:gap-6">
-          {formattedCards.map((card: FormattedCard) => (
-            <GoalCard key={card.id} card={card} />
-          ))}
-        </div>
-      )}
     </main>
   );
 }
