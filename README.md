@@ -1,5 +1,4 @@
-
-# GitMatch 🤝
+# GitMatch 
 
 **Connect. Collaborate. Code.** Find active developers looking for partners to learn, build, or solve problems with.
 
@@ -14,7 +13,7 @@ Finding a coding partner on Reddit or Discord often means wading through noise, 
 
 ---
 
-## Why GitMatch? ✨
+## Why GitMatch? 
 
 GitMatch cuts through the noise with a focused approach:
 
