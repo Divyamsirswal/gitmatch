@@ -157,7 +157,7 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
                         {showCaptcha && (
                             <div className="mt-2 relative">
                                 <Turnstile
-                                    sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSILE_SITE_KEY!}
+                                    sitekey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY!}
                                     onVerify={verifyTurnstileToken}
                                     onError={() => { toast.error("CAPTCHA challenge failed to load. Please refresh."); setShowCaptcha(false); }}
                                     onExpire={() => { toast.error("CAPTCHA challenge expired. Please click Reveal again."); setShowCaptcha(false); }}
