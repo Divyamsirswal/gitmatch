@@ -50,7 +50,7 @@ export default async function ProfilePage() {
     })) || [];
 
     return (
-        <main className="max-w-4xl mx-auto p-4 md:p-8">
+        <main className="max-w-6xl mx-auto p-4 md:p-8">
             <div className="flex justify-between items-center mb-6 md:mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold text-white">Your Goal Cards</h1>
                 <Link href="/" className="text-sm text-blue-400 hover:text-blue-300">
@@ -81,12 +81,12 @@ export default async function ProfilePage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {formattedCards.map((card) => (
                         <GoalCard
                             key={card.id}
                             card={card}
-                            currentUserId={user.id}
+                            currentUserId={user.id} 
                         />
                     ))}
                 </div>

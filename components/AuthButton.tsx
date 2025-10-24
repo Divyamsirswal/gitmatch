@@ -12,7 +12,7 @@ export default async function AuthButton() {
     return user ? (
         <div className="flex items-center gap-4">
             <Link href="/profile" className="text-sm text-gray-300 hover:text-white hidden sm:block" title="View Your Cards">
-                Hey, {user.email}
+                My Profile
             </Link>
             <LogoutButton />
         </div>

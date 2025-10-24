@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer';
 import { notFound, redirect } from 'next/navigation';
 import EditCardForm from './EditCardForm';
 
+// Define CardData type (or import from a shared types file)
 type CardData = {
     id: string;
     created_at: string;
@@ -14,6 +15,8 @@ type CardData = {
     contact_method: string;
     email?: string | null;
     user_id: string;
+    timezone?: string | null;
+    availability?: string[] | null;
 };
 
 type ResolvedParams = { cardId: string };
@@ -39,10 +42,9 @@ export default async function EditCardPage({ params }: { params: Promise<Resolve
         .eq('id', cardId)
         .maybeSingle();
 
-    if (fetchError) {
-        if (fetchError.code !== 'PGRST116') {
-            throw new Error(`Failed to fetch card: ${fetchError.message}`);
-        }
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error(`[Edit Page] Error fetching card ${cardId}:`, fetchError);
+        throw new Error(`Failed to fetch card: ${fetchError.message}`);
     }
 
     if (!cardData) {
@@ -50,10 +52,12 @@ export default async function EditCardPage({ params }: { params: Promise<Resolve
     }
 
     if (cardData.user_id !== user.id) {
+        console.warn(`[Edit Page] Unauthorized attempt to edit card ${cardId} by user ${user.id}`);
         redirect('/');
     }
 
     return (
+        // Pass the fetched, authorized card data to the form
         <EditCardForm card={cardData as CardData} />
     );
 }

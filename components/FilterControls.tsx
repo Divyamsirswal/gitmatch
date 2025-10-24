@@ -21,22 +21,18 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
     const [level, setLevel] = useState(currentFilters.level || '');
     const [goal, setGoal] = useState(currentFilters.goal || '');
 
-    // Function to update URL parameters
     const updateQueryParams = useCallback((newTech: string, newLevel: string, newGoal: string) => {
         const params = new URLSearchParams(searchParams);
         if (newTech) params.set('tech', newTech); else params.delete('tech');
         if (newLevel) params.set('level', newLevel); else params.delete('level');
         if (newGoal) params.set('goal', newGoal); else params.delete('goal');
-        // Reset page for pagination later if needed: params.delete('page');
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     }, [searchParams, router, pathname]);
 
-    // Debounced function for the tech input
     const debouncedUpdateTech = useDebouncedCallback((value: string) => {
         updateQueryParams(value, level, goal);
-    }, 500); // 500ms delay after user stops typing
+    }, 500);
 
-    // Handlers for immediate update on select change
     const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newLevel = e.target.value;
         setLevel(newLevel);
@@ -49,22 +45,19 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
         updateQueryParams(tech, level, newGoal);
     };
 
-    // Handler for tech input using debounce
     const handleTechChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newTech = e.target.value.toLowerCase();
         setTech(newTech);
         debouncedUpdateTech(newTech);
     };
 
-    // Reset handler
     const handleResetFilters = () => {
         setTech('');
         setLevel('');
         setGoal('');
-        router.push(pathname, { scroll: false }); // Navigate to base path
+        router.push(pathname, { scroll: false });
     };
 
-    // Effect to sync state if URL changes externally
     useEffect(() => {
         setTech(searchParams.get('tech') || '');
         setLevel(searchParams.get('level') || '');
@@ -82,14 +75,14 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
                 <label htmlFor="tech-filter" className={labelClasses}>Tech:</label>
                 <input
                     id="tech-filter" type="text" value={tech}
-                    onChange={handleTechChange} // Use debounced handler
+                    onChange={handleTechChange}
                     placeholder="e.g., rust" className={`${inputBaseClasses} min-w-[150px]`}
                 />
             </div>
             <div>
                 <label htmlFor="level-filter" className={labelClasses}>Level:</label>
                 <select id="level-filter" value={level}
-                    onChange={handleLevelChange} // Immediate update
+                    onChange={handleLevelChange}
                     className={`${inputBaseClasses} min-w-[150px]`}>
                     <option value="">All Levels</option> <option value="BEGINNER">Beginner</option> <option value="INTERMEDIATE">Intermediate</option> <option value="ADVANCED">Advanced</option>
                 </select>
@@ -97,12 +90,11 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
             <div>
                 <label htmlFor="goal-filter" className={labelClasses}>Goal:</label>
                 <select id="goal-filter" value={goal}
-                    onChange={handleGoalChange} // Immediate update
+                    onChange={handleGoalChange}
                     className={`${inputBaseClasses} min-w-[150px]`}>
                     <option value="">All Goals</option> <option value="BUILD">Build</option> <option value="LEARN">Learn</option> <option value="SOLVE">Solve</option>
                 </select>
             </div>
-            {/* Removed Apply button, Reset remains */}
             <button onClick={handleResetFilters} className={`${buttonStyle} bg-gray-600 hover:bg-gray-500`}>Reset</button>
         </div>
     );

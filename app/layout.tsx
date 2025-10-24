@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import Header from '@/components/Header';
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitMatch",
-  description: "Find your coding partner",
+  title: "GitMatch - Find Your Coding Partner",
+  description: "Connect with active developers to learn, build projects, or solve problems together",
   icons: {
-    icon: '/icon.png', 
+    icon: '/icon.png',
     apple: '/apple-touch-icon.png',
   },
 };
@@ -32,7 +34,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-gray-100 min-h-screen`}
       >
-        {children}
+        <Suspense fallback={<header className="h-[65px] bg-gray-800"></header>}>
+          <Header />
+        </Suspense>
+        <main className="grow w-full">
+          {children}
+        </main>
         <Toaster
           position="top-center"
           reverseOrder={false}
