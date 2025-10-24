@@ -171,7 +171,6 @@ export async function findMatches(
     const { data: potentialMatchesData, error } = await supabase
         .from("cards").select("*").gt("created_at", fourteenDaysAgo).limit(100);
 
-    // Explicitly cast to Card[] or handle potential null
     const potentialMatches = potentialMatchesData as Card[] | null;
 
     if (error || !potentialMatches) {

@@ -1,4 +1,3 @@
-// File: app/api/relist/route.ts
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -6,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const token = searchParams.get("token");
+    const token = searchParams.get("token"); // Look for 'token'
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const redirectBaseUrl = new URL("/", request.url);
@@ -30,29 +29,31 @@ export async function GET(request: NextRequest) {
     });
 
     try {
-        const now = new Date().toISOString();
+        const nowISO = new Date().toISOString();
         const { data: tokenData, error: tokenFetchError } = await supabaseAdmin
             .from("relist_tokens")
             .select("card_id, expires_at")
             .eq("token", token)
+            .gte("expires_at", nowISO)
             .single();
 
         if (tokenFetchError || !tokenData) {
             console.warn(
-                `Relist attempt with invalid or non-existent token: ${token}`,
+                `Relist attempt with invalid, non-existent, or expired token: ${token}`,
                 tokenFetchError,
             );
-            redirectBaseUrl.searchParams.set("relist_error", "invalid_link");
-            return NextResponse.redirect(redirectBaseUrl);
-        }
-
-        if (new Date(tokenData.expires_at) < new Date()) {
-            console.warn(`Relist attempt with expired token: ${token}`);
-            await supabaseAdmin.from("relist_tokens").delete().eq(
-                "token",
-                token,
+            if (tokenFetchError?.code !== "PGRST116") { // PGRST116 means not found
+                await supabaseAdmin.from("relist_tokens").delete().eq(
+                    "token",
+                    token,
+                );
+            }
+            redirectBaseUrl.searchParams.set(
+                "relist_error",
+                tokenFetchError?.code === "PGRST116"
+                    ? "invalid_link"
+                    : "expired_link",
             );
-            redirectBaseUrl.searchParams.set("relist_error", "expired_link");
             return NextResponse.redirect(redirectBaseUrl);
         }
 
@@ -67,19 +68,20 @@ export async function GET(request: NextRequest) {
                 `Error relisting card ${cardId} using token ${token}:`,
                 updateError.message,
             );
-            throw updateError;
+            throw updateError; // Let main catch handle redirect
         }
 
         const { error: tokenDeleteError } = await supabaseAdmin
             .from("relist_tokens")
             .delete()
-            .eq("token", token);
+            .eq("token", token); // Delete the specific token used
 
         if (tokenDeleteError) {
             console.error(
-                `Failed to delete used relist token ${token}:`,
+                `CRITICAL: Failed to delete used relist token ${token}:`,
                 tokenDeleteError.message,
             );
+            // Log this failure, but proceed with success redirect as card was relisted
         }
 
         console.log(
