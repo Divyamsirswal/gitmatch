@@ -11,9 +11,9 @@ export default async function AuthButton() {
 
     return user ? (
         <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-300 hidden sm:block">
+            <Link href="/profile" className="text-sm text-gray-300 hover:text-white hidden sm:block" title="View Your Cards">
                 Hey, {user.email}
-            </span>
+            </Link>
             <LogoutButton />
         </div>
     ) : (
