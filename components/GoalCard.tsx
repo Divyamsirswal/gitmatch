@@ -151,6 +151,8 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
                 </p>
 
                 <div className="text-right">
+                    <span className="font-medium text-gray-300 capitalize">{card.contact_method.toLowerCase()} @ </span>
+
                     {isContactVisible ? (
                         <span className="text-gray-100 break-all text-xs sm:text-sm">{card.contact_handle}</span>
                     ) : (
