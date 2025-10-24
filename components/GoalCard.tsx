@@ -103,12 +103,12 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
     }
 
     return (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md text-gray-200 relative">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md text-gray-200 relative overflow-hidden">
             {isOwner && (
-                <div className="absolute top-2 right-2 flex gap-2 z-10">
+                <div className="absolute top-2 right-2 flex gap-1.5 z-10">
                     <Link
                         href={`/edit/${card.id}`}
-                        className="p-1 text-xs bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
+                        className="p-1.5 text-xs bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
                         aria-label="Edit Card"
                         title="Edit Card"
                     >
@@ -117,7 +117,7 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
                     <button
                         onClick={handleDelete}
                         disabled={isDeleting}
-                        className="p-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 transition-colors"
+                        className="p-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 transition-colors"
                         aria-label="Delete Card"
                         title="Delete Card"
                     >
@@ -126,7 +126,7 @@ export default function GoalCard({ card, currentUserId }: CardProps) {
                 </div>
             )}
 
-            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-word pr-16">{card.description}</h3>
+            <h3 className="text-lg font-semibold mb-2 text-white wrap-break-word pr-14 sm:pr-16">{card.description}</h3>
             <div className="mb-3 flex flex-wrap gap-2">
                 {card.tech_tags?.map((tag: string) => (
                     <span key={tag} className="bg-blue-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full lowercase">

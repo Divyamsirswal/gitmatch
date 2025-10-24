@@ -74,10 +74,10 @@ export default function FilterControls({ currentFilters }: FilterControlsProps) 
 
     const inputBaseClasses = "block w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white";
     const labelClasses = "block text-xs font-medium text-gray-400 mb-1";
-    const buttonStyle = "px-4 py-1.5 text-white text-sm rounded-md transition-colors"; // Base button style
+    const buttonStyle = "px-4 py-1.5 text-white text-sm rounded-md transition-colors";
 
     return (
-        <div className="flex flex-wrap items-end gap-4 mb-6">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3 mb-6">
             <div>
                 <label htmlFor="tech-filter" className={labelClasses}>Tech:</label>
                 <input

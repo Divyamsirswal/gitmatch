@@ -127,10 +127,10 @@ export default async function Home({
   }
 
   return (
-    <main className="max-w-4xl mx-auto p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6 md:mb-8 gap-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-white">GitMatch</h1>
-        <div className="flex items-center gap-3">
+    <main className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 md:mb-8 gap-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center sm:text-left">GitMatch</h1>
+        <div className="flex items-center gap-3 self-center sm:self-auto">
           {user && (
             <Link
               href="/post"
