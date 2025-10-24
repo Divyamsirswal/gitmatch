@@ -65,11 +65,20 @@ export default async function ProfilePage() {
             )}
 
             {formattedCards.length === 0 && !fetchError ? (
-                <div className="text-center p-8 bg-gray-800 rounded-lg border border-gray-700">
-                    <p className="text-gray-400 mb-4">You haven't posted any goal cards yet.</p>
-                    <Link href="/post" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors">
-                        + Post Your First Goal
-                    </Link>
+                <div className="text-center py-12 px-6 bg-gray-800 rounded-lg border border-gray-700">
+                    <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 className="mt-2 text-lg font-medium text-gray-300">No Goal Cards Yet</h3>
+                    <p className="mt-1 text-sm text-gray-400">You haven't posted any goals. Get started by creating one!</p>
+                    <div className="mt-6">
+                        <Link
+                            href="/post"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500"
+                        >
+                            + Post Your First Goal
+                        </Link>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4 md:gap-6">

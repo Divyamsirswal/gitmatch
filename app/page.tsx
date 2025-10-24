@@ -67,10 +67,18 @@ async function CardListWithUser({ techFilter, levelFilter, goalFilter, currentUs
   const totalPages = count ? Math.ceil(count / ITEMS_PER_PAGE) : 1;
 
   if (formattedCards.length === 0) {
+    const hasFilters = techFilter || levelFilter || goalFilter;
     return (
-      <p className="text-center text-gray-400">
-        {techFilter || levelFilter || goalFilter ? 'No goals found matching your filters. Try broadening your search!' : 'No goals posted yet. Be the first!'}
-      </p>
+      <div className="text-center py-10 px-4 bg-gray-800 rounded-lg border border-gray-700">
+        <h3 className="text-lg font-medium text-gray-300 mb-2">
+          {hasFilters ? "No Matches Found" : "No Goals Posted Yet"}
+        </h3>
+        <p className="text-sm text-gray-400">
+          {hasFilters
+            ? "Try adjusting or clearing your filters to see more goals."
+            : "Be the first to post a goal and find a coding partner!"}
+        </p>
+      </div>
     );
   }
 
