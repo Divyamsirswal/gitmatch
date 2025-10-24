@@ -15,7 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GitMatch",
-  description: "......",
+  description: "Find your coding partner",
+  icons: {
+    icon: '/icon.png', 
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({
